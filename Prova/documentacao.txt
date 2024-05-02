@@ -1,0 +1,31 @@
+Documentação: Contador e Relógio com Display LCD e Botões
+
+Este código em C++ implementa um sistema que utiliza um display LCD com interface I2C e botões para contar cliques, exibir um contador de horas e permitir a limpeza dos dados. Abaixo está a explicação de cada parte do código:
+
+Inicialização:
+
+A biblioteca LiquidCrystal_I2C.h é incluída para permitir a comunicação com o display LCD via I2C.
+Um objeto LiquidCrystal_I2C é criado para controlar o display LCD com o endereço 0x27, 16 colunas e 2 linhas.
+São definidos os pinos para os botões amarelo, azul, verde e vermelho, respectivamente.
+Variáveis são declaradas para controlar a etapa do programa, a opção selecionada, um contador, e para armazenar a hora, minuto, segundo e o delay do relógio. Além disso, uma flag é utilizada para indicar se os dados foram zerados.
+Configuração:
+
+No setup(), a comunicação serial é iniciada, o display LCD é inicializado e o backlight é ativado.
+Os pinos dos botões são configurados como entradas.
+Uma mensagem de boas-vindas é exibida no display LCD por 5 segundos.
+Loop Principal:
+
+No loop(), o programa executa uma série de etapas com base no valor da variável etapa.
+Selecionar Etapa:
+
+A função selecionar() exibe as opções no display LCD e permite a navegação entre elas utilizando os botões.
+Contar ao Clicar:
+
+A função contarAoClicar() conta os cliques no botão azul, permite reiniciar o contador no botão amarelo e voltar para a etapa 1 no botão vermelho.
+Mostrar Relógio:
+
+A função mostrarRelogio() exibe um relógio no display LCD, permitindo ajustar o delay do relógio com os botões e voltar para a etapa 1 no botão vermelho.
+Limpar Dados:
+
+A função limparDados() pergunta ao usuário se deseja limpar os dados, permitindo confirmar a limpeza no botão verde e voltar para a etapa 1 no botão vermelho.
+Esse código oferece uma interface simples e interativa para o usuário controlar diferentes funcionalidades utilizando um display LCD e botões.

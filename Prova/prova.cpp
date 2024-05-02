@@ -1,174 +1,263 @@
-#include <LiquidCrystal_I2C.h>  // Inclui a biblioteca para o uso do LCD I2C
+#include <LiquidCrystal_I2C.h> // Inclui a biblioteca para comunicação com o display LCD via I2C
 
-LiquidCrystal_I2C LCD = LiquidCrystal_I2C(0x27, 16, 2);  // Inicializa o objeto do LCD I2C com endereço 0x27, 16 colunas e 2 linhas
-int bt_blue_NEXT = 33;  // Define o pino para o botão azul (avançar)
-int bt_green_YES = 34;  // Define o pino para o botão verde (sim)
-int bt_yellow_BACK = 32;  // Define o pino para o botão amarelo (voltar)
-int bt_red_CANCEL = 35;  // Define o pino para o botão vermelho (cancelar)
-int h = 0, m = 0, s = 0;  // Variáveis para armazenar horas, minutos e segundos
-int time_setup = 1000;  // Tempo de atualização do relógio (em milissegundos)
-int count = 0;  // Variável para contar cliques
-int layer = 0;  // Variável para controlar o menu
+LiquidCrystal_I2C LCD = LiquidCrystal_I2C(0x27, 16, 2); // Inicializa o objeto do display LCD com endereço 0x27, 16 colunas e 2 linhas
 
-void setup() {
-  Serial.begin(115200);  // Inicia a comunicação serial
-  for(int i=32;i<36;i++)
-    pinMode(i,INPUT);  // Define os pinos de 32 a 35 como entrada
-  LCD.init();  // Inicializa o LCD
-  LCD.backlight();  // Liga o backlight do LCD
-  welcome();  // Exibe a mensagem de boas-vindas
+int botaoAmarelo = 32; // Define o pino do botão amarelo
+int botaoAzul = 33;    // Define o pino do botão azul
+int botaoVerde = 34;   // Define o pino do botão verde
+int botaoVermelho = 35; // Define o pino do botão vermelho
+
+int etapa = 1; // Variável de controle da etapa do programa
+int etapaSelecionada = 1; // Variável de controle da opção selecionada
+int contador = 0; // Variável de contador
+
+int hora = 0;    // Variável de horas
+int minuto = 0;  // Variável de minutos
+int segundo = 0; // Variável de segundos
+
+int relogioDelay = 1000; // Delay do relógio em milissegundos
+bool dadosZerados = false; // Flag para indicar se os dados foram zerados
+
+void setup()
+{
+    Serial.begin(9600); // Inicia a comunicação serial
+    LCD.init();          // Inicializa o display LCD
+    LCD.backlight();     // Ativa o backlight do display LCD
+
+    pinMode(botaoAmarelo, INPUT); // Configura o pino do botão amarelo como entrada
+    pinMode(botaoAzul, INPUT);    // Configura o pino do botão azul como entrada
+    pinMode(botaoVerde, INPUT);   // Configura o pino do botão verde como entrada
+    pinMode(botaoVermelho, INPUT); // Configura o pino do botão vermelho como entrada
+
+    LCD.setCursor(0,0); // Define a posição do cursor no display LCD
+    LCD.print("Bem Vindo!"); // Exibe uma mensagem de boas-vindas no display LCD
+    delay(5000); // Aguarda 5 segundos
+    LCD.clear(); // Limpa o conteúdo do display LCD
 }
 
-void welcome() {
-  LCD.clear();  // Limpa o LCD
-  LCD.setCursor(1, 0);  // Define o cursor na posição (1, 0)
-  LCD.print("SEJA BEM-VINDO!");  // Exibe a mensagem de boas-vindas
-  delay(1000);  // Aguarda 1 segundo
-  displayMenu();  // Exibe o menu
+void loop()
+{
+    // Função principal do loop, onde são chamadas as funções correspondentes a cada etapa do programa
+    if (etapa == 1) // Se a etapa for igual a 1
+        selecionar(); // Chama a função para selecionar a opção
+    else if (etapa == 2) // Se a etapa for igual a 2
+        contarAoClicar(); // Chama a função para contar ao clicar
+    else if (etapa == 3) // Se a etapa for igual a 3
+        mostrarRelogio(); // Chama a função para mostrar o relógio
+    else if (etapa == 4) // Se a etapa for igual a 4
+        limparDados(); // Chama a função para limpar os dados
 }
 
-void displayMenu() {
-  LCD.clear();  // Limpa o LCD
-  LCD.setCursor(0, 0);  // Define o cursor na posição (0, 0)
-  switch (layer) {  // Verifica o valor da variável "layer"
-    case 0:
-      LCD.print("1. Contador");  // Exibe a opção 1 do menu
-      break;
-    case 1:
-      LCD.print("2. Click");  // Exibe a opção 2 do menu
-      break;
-    case 2:
-      LCD.print("3. Clear");  // Exibe a opção 3 do menu
-      break;
-  }
-}
+void selecionar()
+{
+    // Função para selecionar uma das opções do programa
+    switch (etapaSelecionada)
+    {
+    case 1: // Se a opção selecionada for 1
+        LCD.setCursor(0, 0); // Define a posição do cursor no display LCD
+        LCD.print("OPCAO - 1"); // Exibe a opção no display LCD
+        LCD.setCursor(0, 1); // Define a posição do cursor no display LCD
+        LCD.print("Contador d'Clicks"); // Exibe a opção no display LCD
+        break;
 
-void countClick() {
-  LCD.clear();  // Limpa o LCD
-  LCD.setCursor(0, 0);  // Define o cursor na posição (0, 0)
-  LCD.print("Count Clicks");  // Exibe o título da função de contagem de cliques
-  LCD.setCursor(0, 1);  // Define o cursor na posição (0, 1)
-  while (true) {  // Loop infinito para contar cliques
-    if (digitalRead(bt_blue_NEXT) == HIGH) {  // Verifica se o botão azul foi pressionado
-      count++;  // Incrementa o contador de cliques
-      LCD.setCursor(0,1);  // Define o cursor na posição (0, 1)
-      LCD.print("Clicks: ");  // Exibe a etiqueta "Clicks: "
-      LCD.print(count);  // Exibe o valor do contador
-      delay(200);  // Aguarda 200 milissegundos
-      while (digitalRead(bt_blue_NEXT) == HIGH) {}  // Aguarda o botão ser liberado
+    case 2: // Se a opção selecionada for 2
+        LCD.setCursor(0, 0); // Define a posição do cursor no display LCD
+        LCD.print("OPCAO - 2"); // Exibe a opção no display LCD
+        LCD.setCursor(0, 1); // Define a posição do cursor no display LCD
+        LCD.print("Contador de Hora"); // Exibe a opção no display LCD
+        break;
+
+    case 3: // Se a opção selecionada for 3
+        LCD.setCursor(0, 0); // Define a posição do cursor no display LCD
+        LCD.print("OPCAO - 3"); // Exibe a opção no display LCD
+        LCD.setCursor(0, 1); // Define a posição do cursor no display LCD
+        LCD.print("Limpar Dados"); // Exibe a opção no display LCD
+        break;
+
+    default: // Se nenhuma das opções anteriores
+        LCD.clear(); // Limpa o conteúdo do display LCD
+        break;
     }
-    if (digitalRead(bt_yellow_BACK) == HIGH) {  // Verifica se o botão amarelo foi pressionado
-      count = 0;  // Zera o contador de cliques
-      LCD.setCursor(0, 1);  // Define o cursor na posição (0, 1)
-      LCD.print("Clicks: ");  // Exibe a etiqueta "Clicks: "
-      LCD.print(count);  // Exibe o valor zerado do contador
-      delay(200);  // Aguarda 200 milissegundos
-      return;  // Retorna para o menu principal
-    }
-    if (digitalRead(bt_red_CANCEL) == HIGH) {  // Verifica se o botão vermelho foi pressionado
-      exit(0);  // Encerra o programa
-      LCD.clear();  // Limpa o LCD (essa linha nunca será alcançada)
-      welcome();  // Exibe a mensagem de boas-vindas (essa linha nunca será alcançada)
-    }
-  }
-}
 
-void Clock() {
-  LCD.clear();  // Limpa o LCD
-  LCD.setCursor(1, 0);  // Define o cursor na posição (1, 0)
-  LCD.print("Clock");  // Exibe o título do relógio
-  while (true) {  // Loop infinito para atualizar o relógio
-    LCD.setCursor(0, 1);  // Define o cursor na posição (0, 1)
-    LCD.print(h < 10 ? "0" : "");  // Adiciona um zero à esquerda se necessário para as horas
-    LCD.print(h);  // Exibe as horas
-    LCD.print(":");  // Exibe dois pontos
-    LCD.print(m < 10 ? "0" : "");  // Adiciona um zero à esquerda se necessário para os minutos
-    LCD.print(m);  // Exibe os minutos
-    LCD.print(":");  // Exibe dois pontos
-    LCD.print(s < 10 ? "0" : "");  // Adiciona um zero à esquerda se necessário para os segundos
-    LCD.print(s);  // Exibe os segundos
-    delay(time_setup);  // Aguarda o tempo de atualização
-    s++;  // Incrementa os segundos
-    if (s == 60) {  // Se os segundos atingirem 60
-      s = 0;  // Reinicia os segundos
-      m++;  // Incrementa os minutos
-      if (m == 60) {  // Se os minutos atingirem 60
-        m = 0;  // Reinicia os minutos
-        h++;  // Incrementa as horas
-        if (h == 24) {  // Se as horas atingirem 24
-          h = 0;  // Reinicia as horas
+    // Lógica para navegar entre as opções utilizando os botões
+    if (digitalRead(botaoAzul) == HIGH)
+    {
+        if (etapaSelecionada < 3)
+        {
+            etapaSelecionada++;
         }
-      }
-    }
-    if (digitalRead(bt_blue_NEXT) == HIGH) {  // Verifica se o botão azul foi pressionado
-      time_setup = 250;  // Reduz o tempo de atualização para 250ms
-    }
-    if (digitalRead(bt_yellow_BACK) == HIGH) {  // Verifica se o botão amarelo foi pressionado
-      time_setup = 1000;  // Retorna o tempo de atualização para 1000ms
-    }
-    if (digitalRead(bt_red_CANCEL) == HIGH) {  // Verifica se o botão vermelho foi pressionado
-      LCD.clear();  // Limpa o LCD
-      welcome();  // Exibe a mensagem de boas-vindas
-      break;  // Sai do loop
-    }
-  }
-}
-
-void Clear() {
-  LCD.clear();  // Limpa o LCD
-  LCD.setCursor(0, 0);  // Define o cursor na posição (0, 0)
-  LCD.print("Deseja zerar ");  // Exibe a mensagem de confirmação de zerar dados
-  LCD.setCursor(0, 1);  // Define o cursor na posição (0, 1)
-  LCD.print("todos os dados?");  // Exibe a mensagem de confirmação de zerar dados
-  unsigned long startTime = millis();  // Armazena o tempo atual em millisegundos
-  while (millis() - startTime <= 3000) {  // Loop por 3 segundos
-    if (digitalRead(bt_green_YES) == HIGH) {  // Verifica se o botão verde foi pressionado
-      LCD.clear();  // Limpa o LCD
-      LCD.print("Dados zerados!");  // Exibe a mensagem de dados zerados
-      delay(1000);  // Aguarda 1 segundo
-      count = 0;  // Zera o contador de cliques
-      h = m = s = 0;  // Zera o relógio
-      layer = 0;  // Reinicia o menu para a opção inicial
-      displayMenu();  // Exibe o menu
-      return;  // Retorna após zerar os dados
-    }
-    if (digitalRead(bt_red_CANCEL) == HIGH) {  // Verifica se o botão vermelho foi pressionado
-      LCD.clear();  // Limpa o LCD
-      welcome();  // Exibe a mensagem de boas-vindas
-      return;  // Retorna se o botão vermelho for pressionado
-    }
-  }
-}
-
-void loop() {
-  while (true) {  // Loop principal
-    if (digitalRead(bt_green_YES) == HIGH) {  // Verifica se o botão verde foi pressionado
-      delay(100);  // Aguarda 100ms
-      if (layer == 2) {  // Se a opção selecionada for "Clear"
-        Clear();  // Chama a função Clear()
-      } else {
-        layer++;  // Incrementa a camada do menu
-        if(layer==1){
-          Clock();  // Chama a função Clock()
-        }else if(layer==2){
-          countClick();  // Chama a função countClick()
+        else if (etapaSelecionada == 3)
+        {
+            etapaSelecionada = 1;
         }
-        displayMenu();  // Exibe o menu
-      }
-    } else if (digitalRead(bt_yellow_BACK) == HIGH) {  // Verifica se o botão amarelo foi pressionado
-      delay(100);  // Aguarda 100ms
-      layer--;  // Decrementa a camada do menu
-      if (layer < 0) layer = 0;  // Garante que a camada não seja menor que 0
-      displayMenu();  // Exibe o menu
-    } else if (digitalRead(bt_red_CANCEL) == HIGH) {  // Verifica se o botão vermelho foi pressionado
-      delay(100);  // Aguarda 100ms
-      layer = 0;  // Reinicia a camada do menu para a opção inicial
-      welcome();  // Exibe a mensagem de boas-vindas
-    } else if (digitalRead(bt_blue_NEXT) == HIGH) {  // Verifica se o botão azul foi pressionado
-      delay(100);  // Aguarda 100ms
-      layer++;  // Incrementa a camada do menu
-      if (layer > 2) layer = 2;  // Garante que a camada não seja maior que 2
-      displayMenu();  // Exibe o menu
+        LCD.clear(); // Limpa o conteúdo do display LCD
+        delay(120); // Aguarda 120 milissegundos
     }
-  }
+
+    if (digitalRead(botaoVerde) == HIGH)
+    {
+        if (etapa < 4)
+        {
+            LCD.clear(); // Limpa o conteúdo do display LCD
+            etapa = etapaSelecionada + 1; // Avança para a próxima etapa
+            delay(120); // Aguarda 120 milissegundos
+        }
+    }
+
+    if (digitalRead(botaoAmarelo) == HIGH)
+    {
+        if (etapaSelecionada > 1)
+        {
+            etapaSelecionada--;
+        }
+        else if (etapaSelecionada == 1)
+        {
+            etapaSelecionada = 3;
+        }
+        LCD.clear(); // Limpa o conteúdo do display LCD
+        delay(120); // Aguarda 120 milissegundos
+    }
+}
+
+void contarAoClicar()
+{
+    // Função para contar os cliques no botão azul e permitir reiniciar o contador ou voltar para a etapa 1
+    LCD.setCursor(0, 0); // Define a posição do cursor no display LCD
+    LCD.print("Contador d'Clicks"); // Exibe uma mensagem no display LCD
+    LCD.setCursor(0, 1); // Define a posição do cursor no display LCD
+    LCD.print("Contador: "); // Exibe uma mensagem no display LCD
+    LCD.print(contador); // Exibe o valor do contador no display LCD
+
+    if (digitalRead(botaoAzul) == HIGH) // Se o botão azul for pressionado
+    {
+        contador++; // Incrementa o contador
+        LCD.setCursor(10, 1); // Define a posição do cursor no display LCD
+        LCD.print(contador); // Exibe o valor do contador no display LCD
+        delay(120); // Aguarda 120 milissegundos
+    }
+
+    if (digitalRead(botaoAmarelo) == HIGH) // Se o botão amarelo for pressionado
+    {
+        if (etapa > 0) // Se a etapa for maior que 0
+        {
+            contador = 0; // Reinicia o contador
+            LCD.clear(); // Limpa o conteúdo do display LCD
+            LCD.setCursor(0, 0); // Define a posição do cursor no display LCD
+            LCD.print("Contador d'Clicks"); // Exibe uma mensagem no display LCD
+            LCD.setCursor(0, 1); // Define a posição do cursor no display LCD
+            LCD.print("Contador: "); // Exibe uma mensagem no display LCD
+            LCD.print(contador); // Exibe o valor do contador no display LCD
+        }
+    }
+
+    if (digitalRead(botaoVermelho) == HIGH) // Se o botão vermelho for pressionado
+    {
+        if (etapa > 0) // Se a etapa for maior que 0
+        {
+            LCD.clear(); // Limpa o conteúdo do display LCD
+            etapa = 1; // Volta para a etapa 1
+            delay(120); // Aguarda 120 milissegundos
+        }
+    }
+}
+
+void mostrarRelogio()
+{
+    // Função para mostrar o relógio no display LCD e permitir ajustar o delay do relógio ou voltar para a etapa 1
+    LCD.setCursor(0, 0); // Define a posição do cursor no display LCD
+    LCD.print("Contador de Horas"); // Exibe uma mensagem no display LCD
+
+    // Loop infinito para atualizar o relógio
+    for (;;)
+    {
+        LCD.setCursor(0, 1); // Define a posição do cursor no display LCD
+        LCD.print("0"); // Exibe um zero no display LCD
+        LCD.print(hora); // Exibe a hora no display LCD
+        LCD.print(":"); // Exibe dois pontos no display LCD
+        if (minuto < 10) // Se o minuto for menor que 10
+        {
+            LCD.print("0"); // Exibe um zero no display LCD
+        }
+        LCD.print(minuto); // Exibe o minuto no display LCD
+        LCD.print(":"); // Exibe dois pontos no display LCD
+        if (segundo < 10) // Se o segundo for menor que 10
+        {
+            LCD.print("0"); // Exibe um zero no display LCD
+        }
+        LCD.print(segundo); // Exibe o segundo no display LCD
+
+        delay(relogioDelay); // Aguarda o delay do relógio
+
+        segundo++; // Incrementa os segundos
+
+        if (segundo == 60) // Se os segundos atingirem 60
+        {
+            segundo = 0; // Reinicia os segundos
+            minuto++; // Incrementa os minutos
+
+            if (minuto == 60) // Se os minutos atingirem 60
+            {
+                minuto = 0; // Reinicia os minutos
+                hora++; // Incrementa as horas
+
+                if (hora == 24) // Se as horas atingirem 24
+                {
+                    hora = 0; // Reinicia as horas
+                }
+            }
+        }
+
+        if (digitalRead(botaoAzul) == HIGH) // Se o botão azul for pressionado
+        {
+            relogioDelay = 250; // Define um novo delay para o relógio
+        }
+
+        if (digitalRead(botaoAmarelo) == HIGH) // Se o botão amarelo for pressionado
+        {
+            relogioDelay = 1000; // Define um novo delay para o relógio
+        }
+
+        if (digitalRead(botaoVermelho) == HIGH) // Se o botão vermelho for pressionado
+        {
+            LCD.clear(); // Limpa o conteúdo do display LCD
+            etapa = 1; // Volta para a etapa 1
+            break; // Sai do loop
+        }
+    }
+}
+
+void limparDados()
+{
+    // Função para limpar os dados e permitir voltar para a etapa 1
+    LCD.setCursor(0, 0); // Define a posição do cursor no display LCD
+    if (!dadosZerados) // Se os dados não estiverem zerados
+    {
+        LCD.print("Limpar Dados?"); // Exibe uma mensagem no display LCD
+    }
+    else // Se os dados estiverem zerados
+    {
+        LCD.print("Dados Zerados"); // Exibe uma mensagem no display LCD
+    }
+
+    if (digitalRead(botaoVerde) == HIGH) // Se o botão verde for pressionado
+    {
+        if (!dadosZerados) // Se os dados não estiverem zerados
+        {
+            relogioDelay = 1000; // Define o delay do relógio para 1000 milissegundos
+            contador = 0; // Zera o contador
+            hora = 0; // Zera as horas
+            minuto = 0; // Zera os minutos
+            segundo = 0; // Zera os segundos
+            dadosZerados = true; // Define a flag como verdadeira indicando que os dados foram zerados
+            LCD.clear(); // Limpa o conteúdo do display LCD
+            LCD.setCursor(0, 0); // Define a posição do cursor no display LCD
+            LCD.print("Dados Zerados"); // Exibe uma mensagem no display LCD
+        }
+    }
+
+    if (digitalRead(botaoVermelho) == HIGH) // Se o botão vermelho for pressionado
+    {
+        LCD.clear(); // Limpa o conteúdo do display LCD
+        etapa = 1; // Volta para a etapa 1
+    }
 }
